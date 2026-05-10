@@ -1,4 +1,4 @@
-﻿namespace WFASyncretSimulator
+﻿namespace SyncretSimulator
 {
     partial class Form1
     {

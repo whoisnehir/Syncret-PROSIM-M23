@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace WFASyncretSimulator.Properties
+namespace SyncretSimulator.Properties
 {
 
 

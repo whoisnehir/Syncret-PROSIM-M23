@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("WFASyncretSimulator")]
+[assembly: AssemblyTitle("SyncretSimulator")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("WFASyncretSimulator")]
+[assembly: AssemblyProduct("SyncretSimulator")]
 [assembly: AssemblyCopyright("Copyright ©  2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("3706b33b-e905-44da-b429-57a37920b47d")]
+[assembly: Guid("64d59220-b72e-4105-9495-1683745d10f5")]
 
 // Version information for an assembly consists of the following four values:
 //

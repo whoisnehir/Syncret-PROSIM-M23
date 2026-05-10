@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3706B33B-E905-44DA-B429-57A37920B47D}</ProjectGuid>
+    <ProjectGuid>{64D59220-B72E-4105-9495-1683745D10F5}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>WFASyncretSimulator</RootNamespace>
-    <AssemblyName>WFASyncretSimulator</AssemblyName>
+    <RootNamespace>SyncretSimulator</RootNamespace>
+    <AssemblyName>SyncretSimulator</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -33,9 +33,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.dll</HintPath>
-    </Reference>
+    <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
