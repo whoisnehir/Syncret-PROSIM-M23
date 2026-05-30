@@ -142,6 +142,7 @@
             this.lblStatus.Location = new System.Drawing.Point(400, 20);
             this.lblStatus.Name = "lblStatus";
             this.lblStatus.Text = "SYNCRET SYSTEM READY";
+            this.lblStatus.ForeColor = System.Drawing.Color.White;
 
             // 
             // Adăugarea pe Form

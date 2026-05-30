@@ -48,11 +48,11 @@ namespace SyncretSimulator
 
         private void ExecuteSafetyLogic()
         {
-            // Adăugat: Tratare puls Stop General (S0) în interiorul ciclului de scanare
+            // Tratare puls Stop General (S0) în interiorul ciclului de scanare
             if (pulseS0)
             {
                 StopAllMotors();
-                LogAction("STOP GENERAL (S0)");
+                LogAction("System", "EMERGENCY_STOP", "STOP GENERAL (S0)");
             }
 
             // 1. Verificare conflict senzori clapetă (S6, S7, S8)
@@ -76,11 +76,11 @@ namespace SyncretSimulator
                 return;
             }
 
-            // --- ADĂUGAT: LOGICĂ REȚELE IN STIL LADDER SIEMENS (Automenținere) ---
+            // --- LOGICĂ REȚELE IN STIL LADDER SIEMENS (Automenținere) ---
 
             // Comenzi pentru pornire benzi ieșire B3 și B4 (Menținere implicită)
-            if (pulseS3) { M3 = true; LogAction("Start B3 (Ieșire)"); }
-            if (pulseS4) { M4 = true; LogAction("Start B4 (Ieșire)"); }
+            if (pulseS3) { M3 = true; LogAction("B3", "MOTOR_START", "Start B3 (Ieșire)"); }
+            if (pulseS4) { M4 = true; LogAction("B4", "MOTOR_START", "Start B4 (Ieșire)"); }
 
             // Regula B1: Condiție validare rută industrială
             bool pathB1Valid = (chkS6.Checked && M3) || chkS7.Checked;
@@ -88,22 +88,25 @@ namespace SyncretSimulator
             // Evaluare feedback la apăsare buton
             if (pulseS1)
             {
-                if (pathB1Valid) { LogAction("Start B1"); }
-                else { LogAction("Eroare: Condiții pornire B1 neîndeplinite."); }
+                if (pathB1Valid)
+                    LogAction("B1", "MOTOR_START", "Start B1");
+                else
+                    LogAction("B1", "START_DENIED", "Eroare: Condiții pornire B1 neîndeplinite.");
             }
 
             // Ecuația Booleană de Automenținere PLC pentru M1:
             // (A fost apăsat StartB1 SAU mergea deja M1) ȘI ruta e validă ȘI NU s-a apăsat Stop Intrări (S5)
             M1 = (M1 || pulseS1) && pathB1Valid && !pulseS5;
 
-
             // Regula B2: Simetrică pentru banda 2
             bool pathB2Valid = (chkS8.Checked && M4) || chkS7.Checked;
 
             if (pulseS2)
             {
-                if (pathB2Valid) { LogAction("Start B2"); }
-                else { LogAction("Eroare: Condiții pornire B2 neîndeplinite."); }
+                if (pathB2Valid)
+                    LogAction("B2", "MOTOR_START", "Start B2");
+                else
+                    LogAction("B2", "START_DENIED", "Eroare: Condiții pornire B2 neîndeplinite.");
             }
 
             // Ecuația Booleană de Automenținere PLC pentru M2:
@@ -113,7 +116,7 @@ namespace SyncretSimulator
         // --- EVENIMENTE BUTOANE (Trimit doar impulsuri în memoria PLC) ---
         private void btnS1_Click(object sender, EventArgs e)
         {
-            if (!isAlarmActive) pulseS1 = true; // Ridicăm bitul de intrare pentru 100ms
+            if (!isAlarmActive) pulseS1 = true;
         }
 
         private void btnS2_Click(object sender, EventArgs e)
@@ -138,7 +141,11 @@ namespace SyncretSimulator
 
         private void btnS5_Click(object sender, EventArgs e) // STOP INTRĂRI
         {
-            if (!isAlarmActive) { pulseS5 = true; LogAction("Stop Intrări (S5)"); }
+            if (!isAlarmActive)
+            {
+                pulseS5 = true;
+                LogAction("B1_B2", "MOTOR_STOP", "Stop Intrări (S5)");
+            }
         }
 
         // --- METODE HELPER ---
@@ -154,23 +161,32 @@ namespace SyncretSimulator
             StopAllMotors();
             lblStatus.Text = message;
             lblStatus.ForeColor = Color.Red;
-            if (lblAlarm != null) lblAlarm.Visible = true; // Conectăm și lblAlarm din designerul tău
-            LogAction("ALARMĂ: " + message);
+            if (lblAlarm != null) lblAlarm.Visible = true;
+            LogAction("Clapeta", "ALARM", "ALARMĂ: " + message);
         }
 
         private void ResetAlarm()
         {
             isAlarmActive = false;
-            lblStatus.Text = "SYSTEM READY";
+            lblStatus.Text = "SYNCRET SYSTEM READY";
             lblStatus.ForeColor = Color.White;
             if (lblAlarm != null) lblAlarm.Visible = false;
         }
 
-        private void LogAction(string message)
+        // --- LOGARE EVENIMENTE ---
+
+        // Overload complet: UI instant + DB asincron
+        private void LogAction(string component, string eventType, string message)
         {
             if (lstEvents != null)
                 lstEvents.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {message}");
+
+            Infrastructure.SqlLogger.LogAsync(component, eventType, message);
         }
+
+        // Overload de compatibilitate (fallback - pastreza apelurile vechi functionale)
+        private void LogAction(string message)
+            => LogAction("System", "INFO", message);
 
         private void UpdateUI()
         {
@@ -206,7 +222,7 @@ namespace SyncretSimulator
             StyleButtonS1S4(btnS3); StyleButtonS1S4(btnS4);
             StyleButtonS1S4(btnS5);
             StyleStatusLabel(lblStatus);
-            btnS5.BackColor = Color.DarkOrange; // S5 e stop parțial, îl facem portocaliu
+            btnS5.BackColor = Color.DarkOrange;
             CheckBox[] sensors = { chkS6, chkS7, chkS8 };
             foreach (var chk in sensors)
             {
@@ -240,7 +256,7 @@ namespace SyncretSimulator
 
         private void labelB2_Click(object sender, EventArgs e)
         {
-            
+
         }
     }
 }
