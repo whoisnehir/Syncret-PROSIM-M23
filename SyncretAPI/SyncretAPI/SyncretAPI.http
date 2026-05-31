@@ -1,0 +1,6 @@
+@SyncretAPI_HostAddress = http://localhost:5212
+
+GET {{SyncretAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

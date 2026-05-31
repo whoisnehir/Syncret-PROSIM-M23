@@ -13,6 +13,9 @@ namespace SyncretSimulator.Infrastructure
 
         private static bool _connectionErrorLogged = false;
 
+        // ----------------------------------------------------------------
+        // LOG EVENT — ProcessLogs (istoric)
+        // ----------------------------------------------------------------
         public static void LogAsync(string component, string eventType, string message)
         {
             if (string.IsNullOrEmpty(_connectionString))
@@ -21,42 +24,84 @@ namespace SyncretSimulator.Infrastructure
                 return;
             }
 
-            Task.Run(() => WriteToDatabase(component, eventType, message))
-                .ContinueWith(t =>
-                {
-                    if (t.IsFaulted && t.Exception != null)
-                    {
-                        if (!_connectionErrorLogged)
-                        {
-                            _connectionErrorLogged = true;
-                            Debug.WriteLine("[SqlLogger] Eroare DB: " +
-                                            t.Exception.InnerException?.Message);
-                        }
-                    }
-                    else
-                    {
-                        _connectionErrorLogged = false;
-                    }
-                }, TaskContinuationOptions.NotOnCanceled);
+            Task.Run(() => WriteLog(component, eventType, message))
+                .ContinueWith(HandleFault, TaskContinuationOptions.OnlyOnFaulted);
         }
 
-        private static async Task WriteToDatabase(string component, string eventType, string message)
+        private static async Task WriteLog(string component, string eventType, string message)
         {
-            const string sql = @"INSERT INTO ProcessLogs (Component, EventType, Message)
-                                 VALUES (@Component, @EventType, @Message)";
+            const string sql = @"
+                INSERT INTO ProcessLogs (Component, EventType, Message)
+                VALUES (@Component, @EventType, @Message)";
 
-            using (var connection = new SqlConnection(_connectionString))
+            using (var conn = new SqlConnection(_connectionString))
             {
-                await connection.OpenAsync();
-                using (var command = new SqlCommand(sql, connection))
+                await conn.OpenAsync();
+                using (var cmd = new SqlCommand(sql, conn))
                 {
-                    command.Parameters.AddWithValue("@Component", Truncate(component, 100));
-                    command.Parameters.AddWithValue("@EventType", Truncate(eventType, 50));
-                    command.Parameters.AddWithValue("@Message",
+                    cmd.Parameters.AddWithValue("@Component", Truncate(component, 100));
+                    cmd.Parameters.AddWithValue("@EventType", Truncate(eventType, 50));
+                    cmd.Parameters.AddWithValue("@Message",
                         string.IsNullOrEmpty(message) ? (object)DBNull.Value : message);
-
-                    await command.ExecuteNonQueryAsync();
+                    await cmd.ExecuteNonQueryAsync();
                 }
+            }
+            _connectionErrorLogged = false;
+        }
+
+        // ----------------------------------------------------------------
+        // UPSERT STATE — ProcessState (stare curentă, rândul Id=1)
+        // ----------------------------------------------------------------
+        public static void UpsertStateAsync(bool m1, bool m2, bool m3, bool m4,
+                                            bool isAlarm, string clapetaPos)
+        {
+            if (string.IsNullOrEmpty(_connectionString)) return;
+
+            Task.Run(() => WriteState(m1, m2, m3, m4, isAlarm, clapetaPos))
+                .ContinueWith(HandleFault, TaskContinuationOptions.OnlyOnFaulted);
+        }
+
+        private static async Task WriteState(bool m1, bool m2, bool m3, bool m4,
+                                              bool isAlarm, string clapetaPos)
+        {
+            const string sql = @"
+                UPDATE ProcessState
+                SET M1         = @M1,
+                    M2         = @M2,
+                    M3         = @M3,
+                    M4         = @M4,
+                    IsAlarm    = @IsAlarm,
+                    ClapetaPos = @ClapetaPos,
+                    UpdatedAt  = GETDATE()
+                WHERE Id = 1";
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@M1", m1);
+                    cmd.Parameters.AddWithValue("@M2", m2);
+                    cmd.Parameters.AddWithValue("@M3", m3);
+                    cmd.Parameters.AddWithValue("@M4", m4);
+                    cmd.Parameters.AddWithValue("@IsAlarm", isAlarm);
+                    cmd.Parameters.AddWithValue("@ClapetaPos", Truncate(clapetaPos, 10));
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            _connectionErrorLogged = false;
+        }
+
+        // ----------------------------------------------------------------
+        // HELPERS
+        // ----------------------------------------------------------------
+        private static void HandleFault(Task t)
+        {
+            if (!_connectionErrorLogged)
+            {
+                _connectionErrorLogged = true;
+                Debug.WriteLine("[SqlLogger] Eroare DB: " +
+                                t.Exception?.InnerException?.Message);
             }
         }
 
