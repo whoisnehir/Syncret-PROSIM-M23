@@ -427,3 +427,9 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+#Configuration settings for API
+SyncretAPI/SyncretAPI/appsettings.json
+
+#Configuration settings for Simulator
+SyncretSimulator/SyncretSimulator/App.config
