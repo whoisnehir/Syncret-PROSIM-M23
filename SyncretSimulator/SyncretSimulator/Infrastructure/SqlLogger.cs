@@ -89,7 +89,32 @@ namespace SyncretSimulator.Infrastructure
                 }
             }
         }
+        // ----------------------------------------------------------------
+        // READ CONTROL — citește IsRunning din ProcessState (start/stop din web)
+        // ----------------------------------------------------------------
+        public static bool ReadIsRunning()
+        {
+            if (string.IsNullOrEmpty(_connectionString)) return true; // fallback: rulează
 
+            try
+            {
+                using (var conn = new SqlConnection(_connectionString))
+                {
+                    conn.Open();
+                    using (var cmd = new SqlCommand("SELECT IsRunning FROM ProcessState WHERE Id = 1", conn))
+                    {
+                        var result = cmd.ExecuteScalar();
+                        if (result != null && result != DBNull.Value)
+                            return (bool)result;
+                    }
+                }
+            }
+            catch
+            {
+                // dacă DB-ul e inaccesibil, lăsăm procesul să ruleze (fail-safe)
+            }
+            return true;
+        }
         // ----------------------------------------------------------------
         // HELPERS
         // ----------------------------------------------------------------

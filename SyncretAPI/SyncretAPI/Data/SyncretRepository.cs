@@ -19,9 +19,9 @@ namespace SyncretAPI.Data
         public async Task<ProcessState?> GetStateAsync()
         {
             const string sql = @"
-                SELECT M1, M2, M3, M4, IsAlarm, ClapetaPos, UpdatedAt
-                FROM ProcessState
-                WHERE Id = 1";
+    SELECT M1, M2, M3, M4, IsAlarm, ClapetaPos, IsRunning, UpdatedAt
+    FROM ProcessState
+    WHERE Id = 1";
 
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
@@ -38,8 +38,68 @@ namespace SyncretAPI.Data
                 M4 = reader.GetBoolean(3),
                 IsAlarm = reader.GetBoolean(4),
                 ClapetaPos = reader.GetString(5),
-                UpdatedAt = reader.GetDateTime(6)
+                IsRunning = reader.GetBoolean(6),
+                UpdatedAt = reader.GetDateTime(7)
             };
+        }
+        // ----------------------------------------------------------------
+        // Control proces — setează IsRunning (start/stop din web)
+        // ----------------------------------------------------------------
+        public async Task SetRunningAsync(bool isRunning)
+        {
+            const string sql = @"
+        UPDATE ProcessState
+        SET IsRunning = @IsRunning,
+            UpdatedAt = @UpdatedAt
+        WHERE Id = 1";
+
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@IsRunning", isRunning);
+            cmd.Parameters.AddWithValue("@UpdatedAt", DateTime.UtcNow);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        // ----------------------------------------------------------------
+        // USERS — autentificare
+        // ----------------------------------------------------------------
+        public async Task<User?> GetUserByUsernameAsync(string username)
+        {
+            const string sql = "SELECT Id, Username, PasswordHash, Role FROM Users WHERE Username = @Username";
+
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@Username", username);
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            if (!await reader.ReadAsync()) return null;
+
+            return new User
+            {
+                Id = reader.GetInt32(0),
+                Username = reader.GetString(1),
+                PasswordHash = reader.GetString(2),
+                Role = reader.GetString(3)
+            };
+        }
+
+        // Seed: creează un user dacă nu există deja
+        public async Task EnsureUserAsync(string username, string passwordHash, string role)
+        {
+            const string sql = @"
+        IF NOT EXISTS (SELECT 1 FROM Users WHERE Username = @Username)
+        INSERT INTO Users (Username, PasswordHash, Role)
+        VALUES (@Username, @PasswordHash, @Role)";
+
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@Username", username);
+            cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+            cmd.Parameters.AddWithValue("@Role", role);
+            await cmd.ExecuteNonQueryAsync();
         }
 
         // ----------------------------------------------------------------

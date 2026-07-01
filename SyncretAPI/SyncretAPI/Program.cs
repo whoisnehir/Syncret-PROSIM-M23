@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity.Data;
 using SyncretAPI.Data;
 using SyncretAPI.Hubs;
 
@@ -22,12 +23,42 @@ builder.Services.AddCors(options =>
               .AllowCredentials());
 });
 
+// --- JWT AUTH ---
+var jwtKey = "asdfghjklasdfghjkldfghjkcvbnmdfghjkfghjkghjklkjhgfdjhgd";
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
+
+
+// --- SEED USERI (rulează o dată la pornire) ---
+using (var scope = app.Services.CreateScope())
+{
+    var repo = scope.ServiceProvider.GetRequiredService<SyncretRepository>();
+    var adminHash = BCrypt.Net.BCrypt.HashPassword("admin123");
+    var operatorHash = BCrypt.Net.BCrypt.HashPassword("operator123");
+    await repo.EnsureUserAsync("admin", adminHash, "admin");
+    await repo.EnsureUserAsync("operator", operatorHash, "operator");
+}
 
 // --- MIDDLEWARE ---
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("ReactApp");
+app.UseAuthentication();
+app.UseAuthorization();
 
 // --- ENDPOINTS ---
 
@@ -55,6 +86,45 @@ app.MapGet("/api/logs", async (
 .WithName("GetLogs")
 .WithOpenApi();
 
+// Control proces: start/stop din web
+app.MapPost("/api/control", async (ControlRequest req, SyncretRepository repo) =>
+{
+    await repo.SetRunningAsync(req.IsRunning);
+    return Results.Ok(new { success = true, isRunning = req.IsRunning });
+})
+.WithName("SetControl")
+.RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute { Roles = "admin" });
+
+// POST /api/auth/login — autentificare, întoarce token JWT
+app.MapPost("/api/auth/login", async (LoginRequest req, SyncretRepository repo) =>
+{
+    var user = await repo.GetUserByUsernameAsync(req.Username);
+    if (user is null || !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
+        return Results.Unauthorized();
+
+    // Construiește token-ul JWT cu rolul userului
+    var claims = new[]
+    {
+        new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username),
+        new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, user.Role)
+    };
+
+    var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+        System.Text.Encoding.UTF8.GetBytes("asdfghjklasdfghjkldfghjkcvbnmdfghjkfghjkghjklkjhgfdjhgd"));
+    var creds = new Microsoft.IdentityModel.Tokens.SigningCredentials(
+        key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
+
+    var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
+        claims: claims,
+        expires: DateTime.UtcNow.AddHours(8),
+        signingCredentials: creds);
+
+    var tokenString = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
+
+    return Results.Ok(new { token = tokenString, username = user.Username, role = user.Role });
+})
+.WithName("Login");
+
 // GET /api/stats?lastHours=24 — statistici pentru grafic
 app.MapGet("/api/stats", async (SyncretRepository repo, int lastHours = 24) =>
 {
@@ -66,5 +136,9 @@ app.MapGet("/api/stats", async (SyncretRepository repo, int lastHours = 24) =>
 
 // --- SIGNALR HUB ---
 app.MapHub<ProcessHub>("/hubs/process");
+// Body pentru /api/control
 
 app.Run();
+// Body pentru /api/control
+record ControlRequest(bool IsRunning);
+record LoginRequest(string Username, string Password);

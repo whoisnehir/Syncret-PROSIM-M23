@@ -8,6 +8,7 @@
         public bool M4 { get; set; }
         public bool IsAlarm { get; set; }
         public string ClapetaPos { get; set; } = "None";
+        public bool IsRunning { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
 }

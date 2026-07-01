@@ -1,3 +1,7 @@
+import { useState } from "react";
+
+const API = import.meta.env.VITE_API_URL;
+
 const BANDS = [
   { key: "m1", label: "B1", sublabel: "Intrare Stânga" },
   { key: "m2", label: "B2", sublabel: "Intrare Dreapta" },
@@ -20,7 +24,28 @@ function formatTime(raw) {
   });
 }
 
-export default function BandStatus({ state }) {
+export default function BandStatus({ state, token, isAdmin }) {
+  const [busy, setBusy] = useState(false);
+
+  const toggleRunning = async () => {
+    if (!state) return;
+    setBusy(true);
+    try {
+      await fetch(`${API}/api/control`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isRunning: !state.isRunning }),
+      });
+    } catch (err) {
+      console.error("[BandStatus] Eroare control:", err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!state) {
     return (
       <div style={styles.card}>
@@ -32,7 +57,32 @@ export default function BandStatus({ state }) {
 
   return (
     <div style={styles.card}>
-      <h2 style={styles.cardTitle}>Stare Proces</h2>
+      <div style={styles.headerRow}>
+        <h2 style={styles.cardTitle}>Stare Proces</h2>
+        {isAdmin && (
+          <button
+            onClick={toggleRunning}
+            disabled={busy}
+            style={{
+              ...styles.controlBtn,
+              background: state.isRunning ? "rgba(226,74,74,0.15)" : "rgba(76,175,80,0.15)",
+              borderColor: state.isRunning ? "#E24B4A" : "#4CAF50",
+              color: state.isRunning ? "#E24B4A" : "#4CAF50",
+              opacity: busy ? 0.5 : 1,
+              cursor: busy ? "wait" : "pointer",
+            }}
+          >
+            {state.isRunning ? "⏹ OPREȘTE" : "▶ PORNEȘTE"}
+          </button>
+        )}
+      </div>
+
+      {/* Banner proces oprit */}
+      {!state.isRunning && (
+        <div style={styles.stoppedBanner}>
+          ⏸ PROCES OPRIT — Comandă din interfața web
+        </div>
+      )}
 
       {/* Alarmă */}
       {state.isAlarm && (
@@ -85,15 +135,38 @@ const styles = {
     padding: "24px",
     border: "1px solid #333",
   },
+  headerRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
   cardTitle: {
-    margin: "0 0 20px 0",
+    margin: 0,
     fontSize: 16,
     fontWeight: 700,
     color: "#aaa",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
+  controlBtn: {
+    border: "1px solid",
+    borderRadius: 8,
+    padding: "8px 16px",
+    fontSize: 13,
+    fontWeight: 700,
+    transition: "all 0.2s",
+  },
   waiting: { color: "#666", fontStyle: "italic" },
+  stoppedBanner: {
+    background: "rgba(136,136,136,0.15)",
+    border: "1px solid #888",
+    borderRadius: 8,
+    padding: "10px 16px",
+    color: "#aaa",
+    fontWeight: 700,
+    marginBottom: 16,
+  },
   alarmBanner: {
     background: "rgba(226,74,74,0.15)",
     border: "1px solid #E24B4A",

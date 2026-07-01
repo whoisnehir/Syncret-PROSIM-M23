@@ -31,17 +31,28 @@ CREATE TABLE ProcessState (
     M4         BIT NOT NULL,
     IsAlarm    BIT NOT NULL,
     ClapetaPos NVARCHAR(10) NOT NULL,
+    IsRunning  BIT NOT NULL DEFAULT 1,
     UpdatedAt  DATETIME     NOT NULL
 );
 GO
 
 -- SEED OBLIGATORIU: rândul Id=1 trebuie să existe înainte de primul UPDATE
 IF NOT EXISTS (SELECT 1 FROM ProcessState WHERE Id = 1)
-INSERT INTO ProcessState (Id, M1, M2, M3, M4, IsAlarm, ClapetaPos, UpdatedAt)
-VALUES (1, 0, 0, 0, 0, 0, 'None', GETUTCDATE());
+INSERT INTO ProcessState (Id, M1, M2, M3, M4, IsAlarm, ClapetaPos, IsRunning, UpdatedAt)
+VALUES (1, 0, 0, 0, 0, 0, 'None', 1, GETUTCDATE());
 GO
 
 -- Index pentru /api/logs și /api/stats
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ProcessLogs_Timestamp')
 CREATE INDEX IX_ProcessLogs_Timestamp ON ProcessLogs(Timestamp DESC);
+GO
+
+-- Utilizatori (autentificare + roluri)
+IF OBJECT_ID('dbo.Users', 'U') IS NULL
+CREATE TABLE Users (
+    Id           INT IDENTITY(1,1) PRIMARY KEY,
+    Username     NVARCHAR(50)  NOT NULL UNIQUE,
+    PasswordHash NVARCHAR(255) NOT NULL,
+    Role         NVARCHAR(20)  NOT NULL
+);
 GO

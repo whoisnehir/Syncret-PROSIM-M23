@@ -19,6 +19,10 @@ namespace SyncretSimulator
         private bool _prevM1, _prevM2, _prevM3, _prevM4, _prevAlarm;
         private string _prevClapeta = "None";
 
+        // --- CONTROL WEB (start/stop) ---
+        private volatile bool _isRunning = true;   // citit din DB, controlat din web
+        private int _controlPollCounter = 0;       // pentru a citi DB doar o dată pe secundă
+
         // --- ALARMĂ SONORĂ ---
         private System.Threading.CancellationTokenSource _alarmCts;
 
@@ -34,10 +38,32 @@ namespace SyncretSimulator
         }
 
         // --- OB1 SCAN CYCLE ---
+        // --- OB1 SCAN CYCLE ---
         private void mainTimer_Tick(object sender, EventArgs e)
         {
+            // Citește IsRunning din DB o dată pe secundă (la fiecare al 10-lea tick de 100ms)
+            _controlPollCounter++;
+            if (_controlPollCounter >= 10)
+            {
+                _controlPollCounter = 0;
+                System.Threading.Tasks.Task.Run(() =>
+                {
+                    _isRunning = Infrastructure.SqlLogger.ReadIsRunning();
+                });
+            }
+
             ExecuteSafetyLogic();
-            ExecuteProcessLogic();
+
+            if (_isRunning)
+            {
+                ExecuteProcessLogic();
+            }
+            else
+            {
+                // Proces oprit din web: oprește motoarele
+                StopAllMotors();
+            }
+
             UpdateUI();
             pulseS1 = pulseS2 = pulseS3 = pulseS4 = pulseS5 = pulseS0 = false;
         }
