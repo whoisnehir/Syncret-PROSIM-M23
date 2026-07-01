@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const API = "https://localhost:7197";
+const API = import.meta.env.VITE_API_URL;
 
 const EVENT_COLORS = {
   MOTOR_START:    "#4CAF50",
@@ -13,6 +13,16 @@ const EVENT_COLORS = {
 
 const COMPONENTS = ["", "B1", "B2", "B3", "B4", "B1_B2", "Clapeta", "System"];
 const EVENT_TYPES = ["", "MOTOR_START", "MOTOR_STOP", "START_DENIED", "EMERGENCY_STOP", "ALARM", "INFO"];
+
+function formatTimestamp(raw) {
+  if (!raw) return "";
+  const utc = raw.endsWith("Z") ? raw : raw + "Z";
+  const d = new Date(utc);
+  return d.toLocaleString("ro-RO", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+}
 
 export default function EventLog() {
   const [logs, setLogs] = useState([]);
@@ -104,7 +114,7 @@ export default function EventLog() {
               logs.map((log) => (
                 <tr key={log.id} style={styles.tr}>
                   <td style={styles.td}>
-                    {log.timestamp.replace("T", " ").substring(0, 19).replace(/-/g, ".").replace(/(\d{4})\.(\d{2})\.(\d{2})/, "$3.$2.$1")}
+                    {formatTimestamp(log.timestamp)}
                   </td>
                   <td style={styles.td}>
                     <span style={styles.componentBadge}>{log.component}</span>

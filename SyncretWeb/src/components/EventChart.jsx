@@ -4,7 +4,7 @@ import {
   Tooltip, Legend, ResponsiveContainer
 } from "recharts";
 
-const API = "https://localhost:7197";
+const API = import.meta.env.VITE_API_URL;
 
 const EVENT_COLORS_CHART = {
   MOTOR_START:    "#4CAF50",

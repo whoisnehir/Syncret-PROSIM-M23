@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import * as signalR from "@microsoft/signalr";
 
-const HUB_URL = "https://localhost:7197/hubs/process";
+const HUB_URL = `${import.meta.env.VITE_API_URL}/hubs/process`;
 
 export function useSignalR() {
   const [state, setState] = useState(null);

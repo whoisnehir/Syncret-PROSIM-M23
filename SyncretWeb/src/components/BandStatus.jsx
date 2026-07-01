@@ -12,6 +12,14 @@ const CLAPETA_LABELS = {
   None: "—",
 };
 
+function formatTime(raw) {
+  if (!raw) return "--:--:--";
+  const utc = raw.endsWith("Z") ? raw : raw + "Z";
+  return new Date(utc).toLocaleTimeString("ro-RO", {
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+}
+
 export default function BandStatus({ state }) {
   if (!state) {
     return (
@@ -63,7 +71,7 @@ export default function BandStatus({ state }) {
       <div style={styles.footer}>
         <span>Clapetă: <strong style={{ color: "#7F77DD" }}>{CLAPETA_LABELS[state.clapetaPos] ?? state.clapetaPos}</strong></span>
         <span style={styles.timestamp}>
-          Actualizat: {state.updatedAt.substring(11, 19)}
+          Actualizat: {formatTime(state.updatedAt)}
         </span>
       </div>
     </div>

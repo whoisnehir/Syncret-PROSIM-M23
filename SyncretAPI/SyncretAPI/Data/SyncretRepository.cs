@@ -105,7 +105,7 @@ namespace SyncretAPI.Data
                     EventType,
                     COUNT(*) AS Count
                 FROM ProcessLogs
-                WHERE Timestamp >= DATEADD(HOUR, -@LastHours, GETDATE())
+                WHERE Timestamp >= DATEADD(HOUR, -@LastHours, SYSUTCDATETIME())
                 GROUP BY DATEADD(HOUR, DATEDIFF(HOUR, 0, Timestamp), 0), EventType
                 ORDER BY Hour ASC, EventType ASC";
 

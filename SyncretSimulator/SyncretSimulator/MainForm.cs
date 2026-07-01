@@ -19,6 +19,9 @@ namespace SyncretSimulator
         private bool _prevM1, _prevM2, _prevM3, _prevM4, _prevAlarm;
         private string _prevClapeta = "None";
 
+        // --- ALARMĂ SONORĂ ---
+        private System.Threading.CancellationTokenSource _alarmCts;
+
         public MainForm()
         {
             InitializeComponent();
@@ -110,10 +113,29 @@ namespace SyncretSimulator
             lblStatus.ForeColor = Color.Red;
             if (lblAlarm != null) lblAlarm.Visible = true;
             LogAction("Clapeta", "ALARM", "ALARMĂ: " + message);
+
+            // Alarmă sonoră pe thread separat — nu blochează OB1
+            _alarmCts?.Cancel();
+            _alarmCts = new System.Threading.CancellationTokenSource();
+            var token = _alarmCts.Token;
+
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                var endTime = DateTime.Now.AddSeconds(5);
+                while (DateTime.Now < endTime && !token.IsCancellationRequested)
+                {
+                    Console.Beep(880, 200);
+                    if (token.IsCancellationRequested) break;
+                    System.Threading.Thread.Sleep(200);
+                }
+            }, token);
         }
 
         private void ResetAlarm()
         {
+            // Oprește beep-ul imediat dacă mai rulează
+            _alarmCts?.Cancel();
+
             isAlarmActive = false;
             lblStatus.Text = "SYNCRET SYSTEM READY";
             lblStatus.ForeColor = Color.White;

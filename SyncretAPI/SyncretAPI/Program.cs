@@ -3,6 +3,7 @@ using SyncretAPI.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 // --- SERVICII ---
 builder.Services.AddScoped<SyncretRepository>();
 builder.Services.AddSignalR();
@@ -10,14 +11,13 @@ builder.Services.AddHostedService<StatePollingService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS — permite React (localhost:5173 = Vite default)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactApp", policy =>
         policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials()); // necesar pentru SignalR
+              .AllowCredentials()); 
 });
 
 var app = builder.Build();

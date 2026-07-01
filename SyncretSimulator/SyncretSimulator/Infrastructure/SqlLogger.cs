@@ -11,8 +11,6 @@ namespace SyncretSimulator.Infrastructure
         private static readonly string _connectionString =
             SysConfig.ConnectionStrings["SyncretDB"]?.ConnectionString;
 
-        private static bool _connectionErrorLogged = false;
-
         // ----------------------------------------------------------------
         // LOG EVENT — ProcessLogs (istoric)
         // ----------------------------------------------------------------
@@ -20,7 +18,7 @@ namespace SyncretSimulator.Infrastructure
         {
             if (string.IsNullOrEmpty(_connectionString))
             {
-                Debug.WriteLine("[SqlLogger] Connection string 'SyncretDB' lipsește din App.config.");
+                WriteError("Connection string 'SyncretDB' lipsește din App.config.");
                 return;
             }
 
@@ -31,14 +29,15 @@ namespace SyncretSimulator.Infrastructure
         private static async Task WriteLog(string component, string eventType, string message)
         {
             const string sql = @"
-                INSERT INTO ProcessLogs (Component, EventType, Message)
-                VALUES (@Component, @EventType, @Message)";
+                INSERT INTO ProcessLogs (Timestamp, Component, EventType, Message)
+                VALUES (@Timestamp, @Component, @EventType, @Message)";
 
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync();
                 using (var cmd = new SqlCommand(sql, conn))
                 {
+                    cmd.Parameters.AddWithValue("@Timestamp", DateTime.UtcNow);
                     cmd.Parameters.AddWithValue("@Component", Truncate(component, 100));
                     cmd.Parameters.AddWithValue("@EventType", Truncate(eventType, 50));
                     cmd.Parameters.AddWithValue("@Message",
@@ -46,7 +45,6 @@ namespace SyncretSimulator.Infrastructure
                     await cmd.ExecuteNonQueryAsync();
                 }
             }
-            _connectionErrorLogged = false;
         }
 
         // ----------------------------------------------------------------
@@ -72,7 +70,7 @@ namespace SyncretSimulator.Infrastructure
                     M4         = @M4,
                     IsAlarm    = @IsAlarm,
                     ClapetaPos = @ClapetaPos,
-                    UpdatedAt  = GETDATE()
+                    UpdatedAt  = @UpdatedAt
                 WHERE Id = 1";
 
             using (var conn = new SqlConnection(_connectionString))
@@ -86,10 +84,10 @@ namespace SyncretSimulator.Infrastructure
                     cmd.Parameters.AddWithValue("@M4", m4);
                     cmd.Parameters.AddWithValue("@IsAlarm", isAlarm);
                     cmd.Parameters.AddWithValue("@ClapetaPos", Truncate(clapetaPos, 10));
+                    cmd.Parameters.AddWithValue("@UpdatedAt", DateTime.UtcNow); 
                     await cmd.ExecuteNonQueryAsync();
                 }
             }
-            _connectionErrorLogged = false;
         }
 
         // ----------------------------------------------------------------
@@ -97,12 +95,25 @@ namespace SyncretSimulator.Infrastructure
         // ----------------------------------------------------------------
         private static void HandleFault(Task t)
         {
-            if (!_connectionErrorLogged)
+            var msg = t.Exception?.InnerException?.Message
+                      ?? t.Exception?.Message
+                      ?? "eroare necunoscută";
+            WriteError(msg);
+        }
+
+        // Scrie eroarea pe Desktop ca s-o vezi sigur (Debug.WriteLine apare doar cu debugger atașat)
+        private static void WriteError(string msg)
+        {
+            Debug.WriteLine("[SqlLogger] Eroare DB: " + msg);
+            try
             {
-                _connectionErrorLogged = true;
-                Debug.WriteLine("[SqlLogger] Eroare DB: " +
-                                t.Exception?.InnerException?.Message);
+                var path = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    "syncret_errors.txt");
+                System.IO.File.AppendAllText(path,
+                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {msg}{Environment.NewLine}");
             }
+            catch { }
         }
 
         private static string Truncate(string value, int maxLength)
