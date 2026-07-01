@@ -87,12 +87,27 @@ app.MapGet("/api/logs", async (
 .WithOpenApi();
 
 // Control proces: start/stop din web
-app.MapPost("/api/control", async (ControlRequest req, SyncretRepository repo) =>
+app.MapPost("/api/control", async (ControlRequest req, SyncretRepository repo, HttpContext ctx) =>
 {
     await repo.SetRunningAsync(req.IsRunning);
+
+    // Cine a apăsat — din token-ul JWT (nu poate fi falsificat de client)
+    var username = ctx.User.Identity?.Name ?? "necunoscut";
+    var action = req.IsRunning ? "START" : "STOP";
+    await repo.AddControlLogAsync(username, action);
+
     return Results.Ok(new { success = true, isRunning = req.IsRunning });
 })
 .WithName("SetControl")
+.RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute { Roles = "admin" });
+
+// GET /api/control-log — raport întreruperi (cine a oprit/pornit) — doar admin
+app.MapGet("/api/control-log", async (SyncretRepository repo) =>
+{
+    var log = await repo.GetControlLogAsync(100);
+    return Results.Ok(log);
+})
+.WithName("GetControlLog")
 .RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute { Roles = "admin" });
 
 // POST /api/auth/login — autentificare, întoarce token JWT

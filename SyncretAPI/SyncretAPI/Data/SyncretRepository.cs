@@ -62,6 +62,51 @@ namespace SyncretAPI.Data
         }
 
         // ----------------------------------------------------------------
+        // CONTROL LOG — jurnal cine a oprit/pornit (pentru raport admin)
+        // ----------------------------------------------------------------
+        public async Task AddControlLogAsync(string username, string action)
+        {
+            const string sql = @"
+        INSERT INTO ControlLog (Username, Action, Timestamp)
+        VALUES (@Username, @Action, @Timestamp)";
+
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@Username", username);
+            cmd.Parameters.AddWithValue("@Action", action);
+            cmd.Parameters.AddWithValue("@Timestamp", DateTime.UtcNow);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        public async Task<List<ControlLogEntry>> GetControlLogAsync(int limit = 100)
+        {
+            string sql = @"
+        SELECT TOP (@Limit) Id, Username, Action, Timestamp
+        FROM ControlLog
+        ORDER BY Timestamp DESC";
+
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@Limit", limit);
+
+            var list = new List<ControlLogEntry>();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                list.Add(new ControlLogEntry
+                {
+                    Id = reader.GetInt32(0),
+                    Username = reader.GetString(1),
+                    Action = reader.GetString(2),
+                    Timestamp = reader.GetDateTime(3)
+                });
+            }
+            return list;
+        }
+
+        // ----------------------------------------------------------------
         // USERS — autentificare
         // ----------------------------------------------------------------
         public async Task<User?> GetUserByUsernameAsync(string username)
@@ -194,5 +239,13 @@ namespace SyncretAPI.Data
         public DateTime Hour { get; set; }
         public string EventType { get; set; } = "";
         public int Count { get; set; }
+    }
+
+    public class ControlLogEntry
+    {
+        public int Id { get; set; }
+        public string Username { get; set; } = "";
+        public string Action { get; set; } = "";
+        public DateTime Timestamp { get; set; }
     }
 }

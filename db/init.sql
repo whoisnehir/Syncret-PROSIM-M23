@@ -56,3 +56,13 @@ CREATE TABLE Users (
     Role         NVARCHAR(20)  NOT NULL
 );
 GO
+
+-- Jurnal control proces (cine a oprit/pornit, când) — pentru raport admin
+IF OBJECT_ID('dbo.ControlLog', 'U') IS NULL
+CREATE TABLE ControlLog (
+    Id        INT IDENTITY(1,1) PRIMARY KEY,
+    Username  NVARCHAR(50) NOT NULL,
+    Action    NVARCHAR(20) NOT NULL,      -- 'START' sau 'STOP'
+    Timestamp DATETIME     NOT NULL DEFAULT GETUTCDATE()
+);
+GO

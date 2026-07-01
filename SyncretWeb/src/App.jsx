@@ -4,6 +4,7 @@ import BandStatus from "./components/BandStatus";
 import EventLog from "./components/EventLog";
 import EventChart from "./components/EventChart";
 import Login from "./components/Login";
+import ControlLog from "./components/ControlLog";
 
 export default function App() {
   const { auth, logout } = useAuth();
@@ -59,6 +60,11 @@ export default function App() {
           <EventChart />
           <EventLog />
         </div>
+        {isAdmin && (
+          <div style={styles.fullWidth}>
+            <ControlLog token={auth.token} />
+          </div>
+        )}
       </main>
 
       {/* footer */}
