@@ -5,6 +5,7 @@ import EventLog from "./components/EventLog";
 import EventChart from "./components/EventChart";
 import Login from "./components/Login";
 import ControlLog from "./components/ControlLog";
+import UserManagement from "./components/UserManagement";
 
 export default function App() {
   const { auth, logout } = useAuth();
@@ -63,6 +64,11 @@ export default function App() {
         {isAdmin && (
           <div style={styles.fullWidth}>
             <ControlLog token={auth.token} />
+          </div>
+        )}
+        {isAdmin && (
+          <div style={styles.fullWidth}>
+            <UserManagement token={auth.token} currentUsername={auth.username} />
           </div>
         )}
       </main>

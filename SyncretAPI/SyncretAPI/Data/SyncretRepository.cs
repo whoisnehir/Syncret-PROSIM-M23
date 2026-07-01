@@ -147,6 +147,65 @@ namespace SyncretAPI.Data
             await cmd.ExecuteNonQueryAsync();
         }
 
+        // Listă utilizatori (fără parole — doar pentru administrare)
+        public async Task<List<User>> GetAllUsersAsync()
+        {
+            const string sql = "SELECT Id, Username, Role FROM Users ORDER BY Id";
+
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand(sql, conn);
+
+            var users = new List<User>();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                users.Add(new User
+                {
+                    Id = reader.GetInt32(0),
+                    Username = reader.GetString(1),
+                    PasswordHash = "",           // nu returnăm hash-ul niciodată
+                    Role = reader.GetString(2)
+                });
+            }
+            return users;
+        }
+
+        // Creează user nou. Întoarce false dacă username-ul există deja.
+        public async Task<bool> CreateUserAsync(string username, string passwordHash, string role)
+        {
+            const string sql = @"
+        IF NOT EXISTS (SELECT 1 FROM Users WHERE Username = @Username)
+        BEGIN
+            INSERT INTO Users (Username, PasswordHash, Role)
+            VALUES (@Username, @PasswordHash, @Role);
+            SELECT 1;
+        END
+        ELSE
+            SELECT 0;";
+
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@Username", username);
+            cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+            cmd.Parameters.AddWithValue("@Role", role);
+            var result = await cmd.ExecuteScalarAsync();
+            return Convert.ToInt32(result) == 1;
+        }
+
+        // Șterge user după Id.
+        public async Task DeleteUserAsync(int id)
+        {
+            const string sql = "DELETE FROM Users WHERE Id = @Id";
+
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@Id", id);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
         // ----------------------------------------------------------------
         // ProcessLogs — istoric evenimente cu filtre opționale
         // ----------------------------------------------------------------

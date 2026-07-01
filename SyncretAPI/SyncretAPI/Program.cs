@@ -110,6 +110,47 @@ app.MapGet("/api/control-log", async (SyncretRepository repo) =>
 .WithName("GetControlLog")
 .RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute { Roles = "admin" });
 
+// ---- GESTIONARE UTILIZATORI (CRUD) — doar admin ----
+
+// GET /api/users — listă utilizatori (fără parole)
+app.MapGet("/api/users", async (SyncretRepository repo) =>
+{
+    var users = await repo.GetAllUsersAsync();
+    return Results.Ok(users);
+})
+.WithName("GetUsers")
+.RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute { Roles = "admin" });
+
+// POST /api/users — creează user nou
+app.MapPost("/api/users", async (CreateUserRequest req, SyncretRepository repo) =>
+{
+    // Validare minimă
+    if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password))
+        return Results.BadRequest(new { error = "Username și parola sunt obligatorii." });
+
+    if (req.Role != "admin" && req.Role != "operator")
+        return Results.BadRequest(new { error = "Rol invalid (admin sau operator)." });
+
+    var hash = BCrypt.Net.BCrypt.HashPassword(req.Password);
+    var created = await repo.CreateUserAsync(req.Username, hash, req.Role);
+
+    if (!created)
+        return Results.Conflict(new { error = "Există deja un utilizator cu acest nume." });
+
+    return Results.Ok(new { success = true });
+})
+.WithName("CreateUser")
+.RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute { Roles = "admin" });
+
+// DELETE /api/users/{id} — șterge user
+app.MapDelete("/api/users/{id:int}", async (int id, SyncretRepository repo) =>
+{
+    await repo.DeleteUserAsync(id);
+    return Results.Ok(new { success = true });
+})
+.WithName("DeleteUser")
+.RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute { Roles = "admin" });
+
 // POST /api/auth/login — autentificare, întoarce token JWT
 app.MapPost("/api/auth/login", async (LoginRequest req, SyncretRepository repo) =>
 {
@@ -157,3 +198,4 @@ app.Run();
 // Body pentru /api/control
 record ControlRequest(bool IsRunning);
 record LoginRequest(string Username, string Password);
+record CreateUserRequest(string Username, string Password, string Role);
