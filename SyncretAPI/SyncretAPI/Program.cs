@@ -14,10 +14,12 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactApp", policy =>
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(
+                  "http://localhost:5173",   // Vite dev local
+                  "http://localhost:8081")   // frontend containerizat (nginx)
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials()); 
+              .AllowCredentials());
 });
 
 var app = builder.Build();
