@@ -95,7 +95,7 @@ namespace SyncretSimulator
             if (pulseS3) { M3 = true; LogAction("B3", "MOTOR_START", "Start B3 (Ieșire)"); }
             if (pulseS4) { M4 = true; LogAction("B4", "MOTOR_START", "Start B4 (Ieșire)"); }
 
-            bool pathB1Valid = (chkS6.Checked && M3) || chkS7.Checked;
+            bool pathB1Valid = (chkS6.Checked && M3) || (chkS7.Checked && M3 && M4);
             if (pulseS1)
             {
                 if (pathB1Valid) LogAction("B1", "MOTOR_START", "Start B1");
@@ -103,7 +103,7 @@ namespace SyncretSimulator
             }
             M1 = (M1 || pulseS1) && pathB1Valid && !pulseS5;
 
-            bool pathB2Valid = (chkS8.Checked && M4) || chkS7.Checked;
+            bool pathB2Valid = (chkS8.Checked && M4) || (chkS7.Checked && M3 && M4);
             if (pulseS2)
             {
                 if (pathB2Valid) LogAction("B2", "MOTOR_START", "Start B2");
