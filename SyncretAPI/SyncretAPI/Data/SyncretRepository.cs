@@ -19,9 +19,9 @@ namespace SyncretAPI.Data
         public async Task<ProcessState?> GetStateAsync()
         {
             const string sql = @"
-    SELECT M1, M2, M3, M4, IsAlarm, ClapetaPos, IsRunning, UpdatedAt
-    FROM ProcessState
-    WHERE Id = 1";
+            SELECT M1, M2, M3, M4, IsAlarm, ClapetaPos, IsRunning, UpdatedAt
+            FROM ProcessState
+            WHERE Id = 1";
 
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
