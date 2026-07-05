@@ -14,7 +14,7 @@ namespace SyncretAPI.Data
         }
 
         // ----------------------------------------------------------------
-        // ProcessState — stare curentă (rândul Id=1)
+        // ProcessState — stare curenta (randul Id=1)
         // ----------------------------------------------------------------
         public async Task<ProcessState?> GetStateAsync()
         {
@@ -43,7 +43,7 @@ namespace SyncretAPI.Data
             };
         }
         // ----------------------------------------------------------------
-        // Control proces — setează IsRunning (start/stop din web)
+        // Control proces — seteaza IsRunning (start/stop din web)
         // ----------------------------------------------------------------
         public async Task SetRunningAsync(bool isRunning)
         {
@@ -130,7 +130,7 @@ namespace SyncretAPI.Data
             };
         }
 
-        // Seed: creează un user dacă nu există deja
+        // Seed: creeaza un user daca nu exista deja
         public async Task EnsureUserAsync(string username, string passwordHash, string role)
         {
             const string sql = @"
@@ -147,7 +147,7 @@ namespace SyncretAPI.Data
             await cmd.ExecuteNonQueryAsync();
         }
 
-        // Listă utilizatori (fără parole — doar pentru administrare)
+        // Lista utilizatori (fara parole — doar pentru administrare)
         public async Task<List<User>> GetAllUsersAsync()
         {
             const string sql = "SELECT Id, Username, Role FROM Users ORDER BY Id";
@@ -164,14 +164,14 @@ namespace SyncretAPI.Data
                 {
                     Id = reader.GetInt32(0),
                     Username = reader.GetString(1),
-                    PasswordHash = "",           // nu returnăm hash-ul niciodată
+                    PasswordHash = "",          
                     Role = reader.GetString(2)
                 });
             }
             return users;
         }
 
-        // Creează user nou. Întoarce false dacă username-ul există deja.
+        // Creeaza user nou. intoarce false daca username-ul exista deja
         public async Task<bool> CreateUserAsync(string username, string passwordHash, string role)
         {
             const string sql = @"
@@ -194,7 +194,7 @@ namespace SyncretAPI.Data
             return Convert.ToInt32(result) == 1;
         }
 
-        // Șterge user după Id.
+        // sterge user dupa Id.
         public async Task DeleteUserAsync(int id)
         {
             const string sql = "DELETE FROM Users WHERE Id = @Id";
@@ -207,7 +207,7 @@ namespace SyncretAPI.Data
         }
 
         // ----------------------------------------------------------------
-        // ProcessLogs — istoric evenimente cu filtre opționale
+        // ProcessLogs — istoric evenimente cu filtre optionale
         // ----------------------------------------------------------------
         public async Task<List<ProcessLog>> GetLogsAsync(
             string? component = null,
@@ -259,7 +259,7 @@ namespace SyncretAPI.Data
         }
 
         // ----------------------------------------------------------------
-        // Statistici — evenimente grupate pe oră (pentru grafic)
+        // Statistici — evenimente grupate pe ora (pentru grafic)
         // ----------------------------------------------------------------
         public async Task<List<HourlyStats>> GetHourlyStatsAsync(int lastHours = 24)
         {

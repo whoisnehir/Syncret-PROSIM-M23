@@ -49,7 +49,7 @@ export default function Login() {
         </button>
 
         <div style={styles.hint}>
-          admin / admin123 &nbsp;•&nbsp; operator / operator123
+          -
         </div>
       </div>
     </div>

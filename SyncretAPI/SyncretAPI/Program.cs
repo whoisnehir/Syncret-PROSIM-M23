@@ -24,7 +24,8 @@ builder.Services.AddCors(options =>
 });
 
 // --- JWT AUTH ---
-var jwtKey = "asdfghjklasdfghjkldfghjkcvbnmdfghjkfghjkghjklkjhgfdjhgd";
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key lipsește din appsettings.json");
 builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -152,7 +153,7 @@ app.MapDelete("/api/users/{id:int}", async (int id, SyncretRepository repo) =>
 .RequireAuthorization(new Microsoft.AspNetCore.Authorization.AuthorizeAttribute { Roles = "admin" });
 
 // POST /api/auth/login — autentificare, întoarce token JWT
-app.MapPost("/api/auth/login", async (LoginRequest req, SyncretRepository repo) =>
+app.MapPost("/api/auth/login", async (LoginRequest req, SyncretRepository repo, IConfiguration config) =>
 {
     var user = await repo.GetUserByUsernameAsync(req.Username);
     if (user is null || !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
@@ -166,7 +167,7 @@ app.MapPost("/api/auth/login", async (LoginRequest req, SyncretRepository repo) 
     };
 
     var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-        System.Text.Encoding.UTF8.GetBytes("asdfghjklasdfghjkldfghjkcvbnmdfghjkfghjkghjklkjhgfdjhgd"));
+        System.Text.Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
     var creds = new Microsoft.IdentityModel.Tokens.SigningCredentials(
         key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
 

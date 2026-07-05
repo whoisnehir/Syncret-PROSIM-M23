@@ -5,13 +5,11 @@ namespace SyncretAPI.Hubs
 {
     public class ProcessHub : Hub
     {
-        // Clientul React se conectează la acest hub.
-        // Serverul îi trimite starea prin SendStateToAll() din background service.
-        // Nu avem nevoie de metode primite de la client deocamdată.
+        // Clientul React se conecteaza la acest hub.
+        // Serverul ii trimite starea prin SendStateToAll() din background service
     }
 
-    // Background service care polling-uiește DB-ul la fiecare secundă
-    // și trimite starea tuturor clienților conectați prin SignalR
+    // Background service care polling-uieste DB-ul la fiecare secunda si trimite starea tuturor clientilor conectati prin SignalR
     public class StatePollingService : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
@@ -42,7 +40,7 @@ namespace SyncretAPI.Hubs
 
                     if (state != null)
                     {
-                        // Trimite starea tuturor clienților SignalR conectați
+                        // trimiterea tuturor clientilor SignalR conectati
                         await _hub.Clients.All.SendAsync("ReceiveState", state, stoppingToken);
                     }
                 }
@@ -51,7 +49,7 @@ namespace SyncretAPI.Hubs
                     _logger.LogError(ex, "Eroare în StatePollingService.");
                 }
 
-                // Interval polling: 1 secundă
+                // Interval polling: 1 secunda
                 await Task.Delay(1000, stoppingToken);
             }
         }
